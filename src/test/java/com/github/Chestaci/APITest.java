@@ -6,6 +6,7 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
 import io.restassured.http.ContentType;
+import org.assertj.core.api.SoftAssertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -37,30 +38,32 @@ public class APITest extends MyTest {
         Pokemon pokemon1 = getPokemon(name1);
         Pokemon pokemon2 = getPokemon(name2);
 
-        boolean weight = pokemon1.getWeight() < pokemon2.getWeight();
-
-        boolean pokemonAbility1 = pokemon1.getAbilities()
+        SoftAssertions softAssertions = new SoftAssertions();
+        softAssertions.assertThat(pokemon1.getWeight() < pokemon2.getWeight())
+                .overridingErrorMessage("Полученный результат: вес покемона " + pokemon1.getName() +
+                        " больше, чем вес покемона " + pokemon2.getName() + "." + "\n" + "Ожидаемый результат: вес покемона " + pokemon1.getName() +
+                        " меньше, чем вес покемона " + pokemon2.getName() + ".")
+                .isTrue();
+        softAssertions.assertThat(pokemon1.getAbilities()
                 .stream()
                 .anyMatch(
                         pokemonAbility ->
-                                pokemonAbility.getAbility().getName().equals("run-away")
-                );
-
-        boolean pokemonAbility2 = pokemon2.getAbilities()
-                .stream()
-                .anyMatch(
-                        pokemonAbility ->
-                                pokemonAbility.getAbility().getName().equals("run-away")
-                );
-
-        boolean ability = (pokemonAbility1) && (!pokemonAbility2);
-
-        Assertions.assertTrue(weight,
-                "Вес покемона " + pokemon1.getName() + " больше, чем вес покемона " + pokemon2.getName());
-        Assertions.assertTrue(ability,
-                "У покемона " + pokemon1.getName() + " есть способность убежать: " + pokemonAbility1
-                        + ", у покемона " + pokemon2.getName() + " есть способность убежать: " + pokemonAbility2);
-    }
+                                pokemonAbility.getAbility().getName().equals("run-away")))
+                .overridingErrorMessage("Полученный результат: у покемона " + pokemon1.getName() +
+                        " нет способности убежать." + "\n" +"Ожидаемый результат: у покемона " +
+                        pokemon1.getName() + " должна быть способность убежать.")
+                .isTrue();
+        softAssertions.assertThat(pokemon2.getAbilities()
+                        .stream()
+                        .noneMatch(
+                                pokemonAbility ->
+                                        pokemonAbility.getAbility().getName().equals("run-away")))
+                .overridingErrorMessage("Полученный результат: у покемона " + pokemon2.getName() +
+                        " есть способность убежать."  + "\n" + "Ожидаемый результат: у покемона " +
+                        pokemon2.getName() + " не должно быть способности убежать.")
+                .isTrue();
+        softAssertions.assertAll();
+  }
 
     /**
      * Параметризованный тест для осуществления проверки ограничения списка (limit) покемонов
@@ -94,6 +97,7 @@ public class APITest extends MyTest {
                                 pokemon.getName().isEmpty() && pokemon.getName().isBlank()
                 );
 
-        Assertions.assertTrue(hasName, "Имя есть не у всех покемонов в ограниченном списке.");
+        Assertions.assertTrue(hasName, "Имя есть не у всех покемонов в ограниченном списке. " +
+                "Ожидаемый результат: у всех покемонов в списке есть имя.");
     }
 }
