@@ -5,16 +5,12 @@ import com.github.Chestaci.model.PokemonList;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
-import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import org.assertj.core.api.SoftAssertions;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static io.restassured.RestAssured.given;
 
 
 @DisplayName("Тесты проверки покемонов")
@@ -35,35 +31,33 @@ public class APITest extends MyTest {
     @ParameterizedTest
     @CsvSource(value = {"rattata, pidgeotto"}, ignoreLeadingAndTrailingWhitespace = true)
     public void weightAndRunAwayAbilityPokemonComparisonTest(String name1, String name2) {
-        Pokemon pokemon1 = getPokemon(name1);
-        Pokemon pokemon2 = getPokemon(name2);
+        Response response1 = getResponsePokemonName(name1);
+        Pokemon pokemon1 = getPokemon(response1);
+        Response response2 = getResponsePokemonName(name2);
+        Pokemon pokemon2 = getPokemon(response2);
 
         SoftAssertions softAssertions = new SoftAssertions();
-        softAssertions.assertThat(pokemon1.getWeight() < pokemon2.getWeight())
+        checkStatusCode(response1, softAssertions);
+        checkStatusCode(response2, softAssertions);
+        checkContentType(response1, softAssertions);
+        checkContentType(response2, softAssertions);
+        softAssertions.assertThat(pokemon1.getWeight())
                 .overridingErrorMessage("Полученный результат: вес покемона " + pokemon1.getName() +
-                        " больше, чем вес покемона " + pokemon2.getName() + "." + "\n" + "Ожидаемый результат: вес покемона " + pokemon1.getName() +
-                        " меньше, чем вес покемона " + pokemon2.getName() + ".")
-                .isTrue();
-        softAssertions.assertThat(pokemon1.getAbilities()
-                .stream()
-                .anyMatch(
-                        pokemonAbility ->
-                                pokemonAbility.getAbility().getName().equals("run-away")))
+                        " больше, чем вес покемона " + pokemon2.getName() + "." + "\n" + "Ожидаемый результат: вес покемона "
+                        + pokemon1.getName() + " меньше, чем вес покемона " + pokemon2.getName() + ".")
+                .isLessThan(pokemon2.getWeight());
+        softAssertions.assertThat(pokemon1.getAbilities())
                 .overridingErrorMessage("Полученный результат: у покемона " + pokemon1.getName() +
-                        " нет способности убежать." + "\n" +"Ожидаемый результат: у покемона " +
+                        " нет способности убежать." + "Ожидаемый результат: у покемона " +
                         pokemon1.getName() + " должна быть способность убежать.")
-                .isTrue();
-        softAssertions.assertThat(pokemon2.getAbilities()
-                        .stream()
-                        .noneMatch(
-                                pokemonAbility ->
-                                        pokemonAbility.getAbility().getName().equals("run-away")))
+                .anyMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
+        softAssertions.assertThat(pokemon2.getAbilities())
                 .overridingErrorMessage("Полученный результат: у покемона " + pokemon2.getName() +
-                        " есть способность убежать."  + "\n" + "Ожидаемый результат: у покемона " +
+                        " есть способность убежать." + "Ожидаемый результат: у покемона " +
                         pokemon2.getName() + " не должно быть способности убежать.")
-                .isTrue();
+                .noneMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
         softAssertions.assertAll();
-  }
+    }
 
     /**
      * Параметризованный тест для осуществления проверки ограничения списка (limit) покемонов
@@ -77,27 +71,18 @@ public class APITest extends MyTest {
     @ParameterizedTest
     @ValueSource(ints = {30, 50})
     public void listLimitCheckAndNameAvailabilityTest(int limit) {
-        PokemonList list = given()
-                .baseUri("https://pokeapi.co/api/v2/pokemon/")
-                .pathParams("limit", limit)
-                .when()
-                .get("?limit={limit}/")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("results", Matchers.hasSize(limit))
-                .extract()
-                .body()
-                .as(PokemonList.class);
+        Response response = getResponsePokemonLimit(limit);
+        PokemonList list = getPokemonList(response);
 
-        boolean hasName = list.getResults()
-                .stream()
-                .noneMatch(
-                        pokemon ->
-                                pokemon.getName().isEmpty() && pokemon.getName().isBlank()
-                );
-
-        Assertions.assertTrue(hasName, "Имя есть не у всех покемонов в ограниченном списке. " +
-                "Ожидаемый результат: у всех покемонов в списке есть имя.");
+        SoftAssertions softAssertions = new SoftAssertions();
+        checkStatusCode(response, softAssertions);
+        checkContentType(response, softAssertions);
+        softAssertions.assertThat(list.getResults().size())
+                .overridingErrorMessage("Список покемонов не равен " + limit).isEqualTo(limit);
+        softAssertions.assertThat(list.getResults())
+                .overridingErrorMessage("Имя есть не у всех покемонов в ограниченном списке. " +
+                        "Ожидаемый результат: у всех покемонов в списке есть имя.")
+                .noneMatch(pokemon -> pokemon.getName().isEmpty() && pokemon.getName().isBlank());
+        softAssertions.assertAll();
     }
 }
