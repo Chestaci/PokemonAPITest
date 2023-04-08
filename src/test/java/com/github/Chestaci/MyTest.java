@@ -39,7 +39,7 @@ abstract public class MyTest {
      * @param name Имя покемона
      * @return ответ сервера на запрос
      */
-    @Step("Получение Response по имени покемона")
+    @Step("Получение Response по имени покемона. Отправка GET запроса")
     protected static Response getResponsePokemonName(String name) {
         return getRequestSpecification()
                 .pathParams("name", name)
@@ -67,7 +67,7 @@ abstract public class MyTest {
      * @param limit Ограничение списка покемонов
      * @return ответ сервера на запрос
      */
-    @Step("Получение Response по ограничению списка покемонов")
+    @Step("Получение Response по ограничению списка покемонов. Отправка GET запроса")
     protected static Response getResponsePokemonLimit(int limit) {
         return getRequestSpecification()
                 .pathParams("limit", limit)
@@ -103,6 +103,47 @@ abstract public class MyTest {
         softAssertions
                 .assertThat(response.getStatusCode())
                 .isEqualTo(200);
+    }
+
+    @Step("Проверка отсутствия способности \"run-away\" у покемона")
+    protected static void checkAbsenceAbility(Pokemon pokemon2, SoftAssertions softAssertions) {
+        softAssertions.assertThat(pokemon2.getAbilities())
+                .overridingErrorMessage("Полученный результат: у покемона " + pokemon2.getName() +
+                        " есть способность убежать." + "Ожидаемый результат: у покемона " +
+                        pokemon2.getName() + " не должно быть способности убежать.")
+                .noneMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
+    }
+
+    @Step("Проверка наличия у покемона способности \"run-away\"")
+    protected static void checkPokemonAbility(Pokemon pokemon1, SoftAssertions softAssertions) {
+        softAssertions.assertThat(pokemon1.getAbilities())
+                .overridingErrorMessage("Полученный результат: у покемона " + pokemon1.getName() +
+                        " нет способности убежать." + "Ожидаемый результат: у покемона " +
+                        pokemon1.getName() + " должна быть способность убежать.")
+                .anyMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
+    }
+
+    @Step("Сравнение веса покемонов")
+    protected static void pokemonWeightComparison(Pokemon pokemon1, Pokemon pokemon2, SoftAssertions softAssertions) {
+        softAssertions.assertThat(pokemon1.getWeight())
+                .overridingErrorMessage("Полученный результат: вес покемона " + pokemon1.getName() +
+                        " больше, чем вес покемона " + pokemon2.getName() + "." + "\n" + "Ожидаемый результат: вес покемона "
+                        + pokemon1.getName() + " меньше, чем вес покемона " + pokemon2.getName() + ".")
+                .isLessThan(pokemon2.getWeight());
+    }
+
+    @Step("Проверка наличия имени у каждого покемона в ограниченном списке")
+    protected static void checkPokemonName(PokemonList list, SoftAssertions softAssertions) {
+        softAssertions.assertThat(list.getResults())
+                .overridingErrorMessage("Имя есть не у всех покемонов в ограниченном списке. " +
+                        "Ожидаемый результат: у всех покемонов в списке есть имя.")
+                .noneMatch(pokemon -> pokemon.getName().isEmpty() && pokemon.getName().isBlank());
+    }
+
+    @Step("Проверка ограничения списка покемонов")
+    protected static void checkPokemonListLimit(int limit, PokemonList list, SoftAssertions softAssertions) {
+        softAssertions.assertThat(list.getResults().size())
+                .overridingErrorMessage("Список покемонов не равен " + limit).isEqualTo(limit);
     }
 
     @AfterAll

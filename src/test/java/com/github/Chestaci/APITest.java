@@ -41,21 +41,9 @@ public class APITest extends MyTest {
         checkStatusCode(response2, softAssertions);
         checkContentType(response1, softAssertions);
         checkContentType(response2, softAssertions);
-        softAssertions.assertThat(pokemon1.getWeight())
-                .overridingErrorMessage("Полученный результат: вес покемона " + pokemon1.getName() +
-                        " больше, чем вес покемона " + pokemon2.getName() + "." + "\n" + "Ожидаемый результат: вес покемона "
-                        + pokemon1.getName() + " меньше, чем вес покемона " + pokemon2.getName() + ".")
-                .isLessThan(pokemon2.getWeight());
-        softAssertions.assertThat(pokemon1.getAbilities())
-                .overridingErrorMessage("Полученный результат: у покемона " + pokemon1.getName() +
-                        " нет способности убежать." + "Ожидаемый результат: у покемона " +
-                        pokemon1.getName() + " должна быть способность убежать.")
-                .anyMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
-        softAssertions.assertThat(pokemon2.getAbilities())
-                .overridingErrorMessage("Полученный результат: у покемона " + pokemon2.getName() +
-                        " есть способность убежать." + "Ожидаемый результат: у покемона " +
-                        pokemon2.getName() + " не должно быть способности убежать.")
-                .noneMatch(pokemonAbility -> pokemonAbility.getAbility().getName().equals("run-away"));
+        pokemonWeightComparison(pokemon1, pokemon2, softAssertions);
+        checkPokemonAbility(pokemon1, softAssertions);
+        checkAbsenceAbility(pokemon2, softAssertions);
         softAssertions.assertAll();
     }
 
@@ -77,12 +65,8 @@ public class APITest extends MyTest {
         SoftAssertions softAssertions = new SoftAssertions();
         checkStatusCode(response, softAssertions);
         checkContentType(response, softAssertions);
-        softAssertions.assertThat(list.getResults().size())
-                .overridingErrorMessage("Список покемонов не равен " + limit).isEqualTo(limit);
-        softAssertions.assertThat(list.getResults())
-                .overridingErrorMessage("Имя есть не у всех покемонов в ограниченном списке. " +
-                        "Ожидаемый результат: у всех покемонов в списке есть имя.")
-                .noneMatch(pokemon -> pokemon.getName().isEmpty() && pokemon.getName().isBlank());
+        checkPokemonListLimit(limit, list, softAssertions);
+        checkPokemonName(list, softAssertions);
         softAssertions.assertAll();
     }
 }
