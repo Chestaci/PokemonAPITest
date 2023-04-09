@@ -1,5 +1,7 @@
 package com.github.Chestaci;
 
+import com.github.Chestaci.pokemon_api.GetLimitPokemonListMethodAPI;
+import com.github.Chestaci.pokemon_api.GetPokemonMethodAPI;
 import com.github.Chestaci.model.Pokemon;
 import com.github.Chestaci.model.PokemonList;
 import io.qameta.allure.Description;
@@ -31,20 +33,22 @@ public class APITest extends MyTest {
     @ParameterizedTest
     @CsvSource(value = {"rattata, pidgeotto"}, ignoreLeadingAndTrailingWhitespace = true)
     public void weightAndRunAwayAbilityPokemonComparisonTest(String name1, String name2) {
-        Response response1 = getResponsePokemonName(name1);
-        Pokemon pokemon1 = getPokemon(response1);
-        Response response2 = getResponsePokemonName(name2);
-        Pokemon pokemon2 = getPokemon(response2);
+        GetPokemonMethodAPI getPokemonMethodAPI = new GetPokemonMethodAPI("https://pokeapi.co/api/v2/pokemon/");
 
-        SoftAssertions softAssertions = new SoftAssertions();
-        checkStatusCode(response1, softAssertions);
-        checkStatusCode(response2, softAssertions);
-        checkContentType(response1, softAssertions);
-        checkContentType(response2, softAssertions);
-        pokemonWeightComparison(pokemon1, pokemon2, softAssertions);
-        checkPokemonAbility(pokemon1, softAssertions);
-        checkAbsenceAbility(pokemon2, softAssertions);
-        softAssertions.assertAll();
+        Response response1 = getPokemonMethodAPI.getResponsePokemonName(name1);
+        Pokemon pokemon1 = getPokemonMethodAPI.getPokemon(response1);
+        Response response2 = getPokemonMethodAPI.getResponsePokemonName(name2);
+        Pokemon pokemon2 = getPokemonMethodAPI.getPokemon(response2);
+
+        SoftAssertions.assertSoftly(softly -> {
+            getPokemonMethodAPI.checkStatusCode(response1, softly);
+            getPokemonMethodAPI.checkStatusCode(response2, softly);
+            getPokemonMethodAPI.checkContentType(response1, softly);
+            getPokemonMethodAPI.checkContentType(response2, softly);
+            getPokemonMethodAPI.pokemonWeightComparison(pokemon1, pokemon2, softly);
+            getPokemonMethodAPI.checkPokemonAbility(pokemon1, softly);
+            getPokemonMethodAPI.checkAbsenceAbility(pokemon2, softly);
+        });
     }
 
     /**
@@ -59,14 +63,17 @@ public class APITest extends MyTest {
     @ParameterizedTest
     @ValueSource(ints = {30, 50})
     public void listLimitCheckAndNameAvailabilityTest(int limit) {
-        Response response = getResponsePokemonLimit(limit);
-        PokemonList list = getPokemonList(response);
+        GetLimitPokemonListMethodAPI getLimitPokemonListMethodAPI =
+                new GetLimitPokemonListMethodAPI("https://pokeapi.co/api/v2/pokemon/");
 
-        SoftAssertions softAssertions = new SoftAssertions();
-        checkStatusCode(response, softAssertions);
-        checkContentType(response, softAssertions);
-        checkPokemonListLimit(limit, list, softAssertions);
-        checkPokemonName(list, softAssertions);
-        softAssertions.assertAll();
+        Response response = getLimitPokemonListMethodAPI.getResponsePokemonLimit(limit);
+        PokemonList list = getLimitPokemonListMethodAPI.getPokemonList(response);
+
+        SoftAssertions.assertSoftly(softly -> {
+            getLimitPokemonListMethodAPI.checkStatusCode(response, softly);
+            getLimitPokemonListMethodAPI.checkContentType(response, softly);
+            getLimitPokemonListMethodAPI.checkPokemonListLimit(limit, list, softly);
+            getLimitPokemonListMethodAPI.checkPokemonName(list, softly);
+        });
     }
 }
